@@ -1,0 +1,4 @@
+.vscode/
+
+third-part/*
+!third-part/.gitkeep
