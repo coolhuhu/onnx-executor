@@ -2,6 +2,7 @@
 #include <random>
 
 #include "onnx-executor/onnx-executor.h"
+#include "onnx-executor/onnx-utils.h"
 
 std::vector<float> generate_random_data(int size) {
   std::vector<float> data(size);
@@ -28,22 +29,17 @@ int main(int argc, char **argv) {
   int64_t sr = 16000;
   int64_t sr_shape = 1;
 
-  auto memory_info =
-      Ort::MemoryInfo::CreateCpu(OrtDeviceAllocator, OrtMemTypeDefault);
-  Ort::Value input_tensor =
-      Ort::Value::CreateTensor(memory_info, input.data(), input.size(),
-                               input_shape.data(), input_shape.size());
-
-  Ort::Value state_tensor =
-      Ort::Value::CreateTensor(memory_info, state.data(), state.size(),
-                               state_shape.data(), state_shape.size());
+  Ort::Value input_tensor = onnx_executor::CreateTensor(
+      input.data(), input.size(), input_shape.data(), input_shape.size());
+  Ort::Value state_tensor = onnx_executor::CreateTensor(
+      state.data(), state.size(), state_shape.data(), state_shape.size());
   Ort::Value sr_tensor =
-      Ort::Value::CreateTensor<int64_t>(memory_info, &sr, 1, &sr_shape, 1);
+      onnx_executor::CreateTensor<int64_t>(&sr, 1, &sr_shape, 1);
 
-  std::vector<Ort::Value> inputs;
-  inputs.emplace_back(std::move(input_tensor));
-  inputs.emplace_back(std::move(state_tensor));
-  inputs.emplace_back(std::move(sr_tensor));
+  std::vector<Ort::Value> inputs(3);
+  inputs[0] = std::move(input_tensor);
+  inputs[1] = std::move(state_tensor);
+  inputs[2] = std::move(sr_tensor);
 
   std::vector<Ort::Value> output = executor.Forward(std::move(inputs));
   float logit = output[0].GetTensorMutableData<float>()[0];

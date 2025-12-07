@@ -24,6 +24,8 @@ class OnnxExecutor {
 
   std::vector<Ort::Value> Forward(std::vector<Ort::Value> &&inputs);
 
+  std::string LookupCustomMetaData(const char *key);
+
  private:
   class Impl;
   std::unique_ptr<Impl> impl_;

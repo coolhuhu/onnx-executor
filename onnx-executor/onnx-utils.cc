@@ -1,5 +1,6 @@
 #include "onnx-executor/onnx-utils.h"
 
+#include "onnx-executor/macros.h"
 #include "onnx-executor/provider.h"
 
 namespace onnx_executor {
@@ -69,6 +70,29 @@ void GetOutputNames(Ort::Session *sess, std::vector<std::string> *output_names,
   for (size_t i = 0; i != node_count; ++i) {
     (*output_names)[i] = GetOutputName(sess, i, allocator);
     (*output_names_ptr)[i] = (*output_names)[i].c_str();
+  }
+}
+
+void PrintModelMetaData(Ort::ModelMetadata &meta_data) {
+  Ort::AllocatorWithDefaultOptions allocator;
+  std::vector<Ort::AllocatedStringPtr> v =
+      meta_data.GetCustomMetadataMapKeysAllocated(allocator);
+  for (const auto &key : v) {
+    auto p = meta_data.LookupCustomMetadataMapAllocated(key.get(), allocator);
+    ONNX_EXECUTOR_LOGE("%s: %s", key.get(), p.get());
+  }
+}
+
+void GetModelMetaData(
+    Ort::ModelMetadata &meta_data,
+    std::unordered_map<std::string, std::string> *meta_data_map) {
+  Ort::AllocatorWithDefaultOptions allocator;
+  std::vector<Ort::AllocatedStringPtr> v =
+      meta_data.GetCustomMetadataMapKeysAllocated(allocator);
+
+  for (const auto &key : v) {
+    auto p = meta_data.LookupCustomMetadataMapAllocated(key.get(), allocator);
+    meta_data_map->emplace(key.get(), p.get());
   }
 }
 
