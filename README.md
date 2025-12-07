@@ -1,0 +1,157 @@
+# ONNX Executor
+
+A lightweight C++ library for running ONNX models using ONNX Runtime. This library is essentially a wrapper around the onnxruntime library. This library provides a simple and clean interface for loading ONNX models and performing inference.
+
+## Features
+
+- Simple C++ API for ONNX model inference
+- Support for multiple execution providers (CPU, and more)
+- Custom metadata extraction from ONNX models
+- Thread-safe execution
+- CMake-based build system
+- Cross-platform support (Linux, macOS, Windows)
+
+## Build Requirements
+
+- CMake 3.14 or higher
+- C++17 compatible compiler
+- ONNX Runtime (automatically downloaded by CMake)
+
+## Building
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd onnx-executor
+
+# Create build directory
+mkdir build && cd build
+
+# Configure and build
+cmake ..
+make -j$(nproc)
+```
+
+## Usage
+
+### Basic Example
+
+```cpp
+#include <iostream>
+#include "onnx-executor/onnx-executor.h"
+#include "onnx-executor/onnx-utils.h"
+
+int main(int argc, char **argv) {
+    // Configure the executor
+    onnx_executor::OnnxRuntimeConfig config;
+    config.model = "path/to/your/model.onnx";
+    config.provider = "cpu";  // Use CPU execution provider
+    config.num_threads = 1;   // Number of threads to use
+
+    // Create executor
+    onnx_executor::OnnxExecutor executor(config);
+
+    // Prepare input data
+    std::vector<float> input_data = { /* your input data */ };
+    std::vector<int64_t> input_shape = {1, input_data.size()};
+
+    // Create input tensor
+    Ort::Value input_tensor = onnx_executor::CreateTensor(
+        input_data.data(), input_data.size(),
+        input_shape.data(), input_shape.size()
+    );
+
+    // Run inference
+    std::vector<Ort::Value> inputs;
+    inputs.push_back(std::move(input_tensor));
+
+    std::vector<Ort::Value> outputs = executor.Forward(std::move(inputs));
+
+    // Process outputs
+    float* output_data = outputs[0].GetTensorMutableData<float>();
+    std::cout << "Output: " << output_data[0] << std::endl;
+
+    return 0;
+}
+```
+
+### Complete Example
+
+See `example/silero-vad.cc` for a complete example showing how to use the library with the Silero VAD (Voice Activity Detection) model.
+
+## API Reference
+
+### OnnxRuntimeConfig
+
+Configuration structure for the ONNX Runtime executor:
+
+- `model` (std::string): Path to the ONNX model file
+- `provider` (std::string): Execution provider (default: "cpu")
+- `num_threads` (int32_t): Number of threads to use (default: 1)
+
+### OnnxExecutor
+
+Main executor class:
+
+```cpp
+class OnnxExecutor {
+public:
+    explicit OnnxExecutor(const OnnxRuntimeConfig &config);
+    ~OnnxExecutor();
+
+    // Run inference with input tensors
+    std::vector<Ort::Value> Forward(const std::vector<Ort::Value> &inputs);
+    std::vector<Ort::Value> Forward(std::vector<Ort::Value> &&inputs);
+
+    // Extract custom metadata from the model
+    std::string LookupCustomMetaData(const char *key);
+};
+```
+
+### Utility Functions
+
+`onnx_executor::Create<T>()`: Template function to create ONNX tensors from C++ data:
+
+```cpp
+// For float tensors
+Ort::Value tensor = onnx_executor::CreateTensor(
+    data_ptr, data_size, shape_ptr, shape_size
+);
+
+// For int64_t tensors
+Ort::Value tensor = onnx_executor::CreateTensor<int64_t>(
+    data_ptr, data_size, shape_ptr, shape_size
+);
+```
+
+## Project Structure
+
+```
+onnx-executor/
+├── onnx-executor/           # Main library source code
+│   ├── onnx-executor.h/.cc  # Main executor class
+│   ├── onnx-utils.h/.cc     # Utility functions
+│   ├── provider.h/.cc       # Execution provider management
+│   └── utils.h/.cc          # Internal utilities
+├── example/                 # Example usage
+│   └── silero-vad.cc       # Silero VAD example
+├── cmake/                   # CMake modules
+├── third-part/             # Third-party dependencies
+└── CMakeLists.txt          # Root CMake configuration
+```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Dependencies
+
+- [ONNX Runtime](https://onnxruntime.ai/) - High performance cross-platform inference engine for ONNX models
