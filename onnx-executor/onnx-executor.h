@@ -18,7 +18,7 @@ class OnnxExecutor {
  public:
   explicit OnnxExecutor(const OnnxRuntimeConfig &config);
 
-  ~OnnxExecutor() = default;
+  ~OnnxExecutor();
 
   std::vector<Ort::Value> Forward(const std::vector<Ort::Value> &inputs);
 

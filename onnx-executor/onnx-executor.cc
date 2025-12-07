@@ -55,6 +55,8 @@ class OnnxExecutor::Impl {
 OnnxExecutor::OnnxExecutor(const OnnxRuntimeConfig &config)
     : impl_(std::make_unique<Impl>(config)) {}
 
+OnnxExecutor::~OnnxExecutor() = default;
+
 std::vector<Ort::Value> OnnxExecutor::Forward(
     const std::vector<Ort::Value> &inputs) {
   return impl_->Forward(inputs);

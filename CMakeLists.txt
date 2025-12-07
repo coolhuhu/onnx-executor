@@ -11,3 +11,4 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(onnxruntime)
 
 add_subdirectory(onnx-executor)
+add_subdirectory(example)
