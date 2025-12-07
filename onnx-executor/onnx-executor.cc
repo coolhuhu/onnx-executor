@@ -1,6 +1,5 @@
 #include "onnx-executor/onnx-executor.h"
 
-#include <any>
 #include <unordered_map>
 
 #include "onnx-executor/onnx-utils.h"
@@ -19,11 +18,13 @@ class OnnxExecutor::Impl {
   }
 
   std::vector<Ort::Value> Forward(const std::vector<Ort::Value> &inputs) {
-    return {};
+    return sess_->Run({}, input_names_ptr_.data(), inputs.data(), inputs.size(),
+                      output_names_ptr_.data(), output_names_ptr_.size());
   }
 
   std::vector<Ort::Value> Forward(std::vector<Ort::Value> &&inputs) {
-    return {};
+    return sess_->Run({}, input_names_ptr_.data(), inputs.data(), inputs.size(),
+                      output_names_ptr_.data(), output_names_ptr_.size());
   }
 
  private:
