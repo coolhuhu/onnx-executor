@@ -1,12 +1,45 @@
 #ifndef ONNX_EXECUTOR_UTILS_H_
 #define ONNX_EXECUTOR_UTILS_H_
 
+#include <errno.h>
+#include <stdlib.h>
+
+#include <cassert>
+#include <limits>
 #include <string>
+#include <type_traits>
 #include <vector>
+
+#ifdef _MSC_VER
+#define ONNX_STRTOLL(cur_cstr, end_cstr) _strtoi64(cur_cstr, end_cstr, 10);
+#else
+#define ONNX_STRTOLL(cur_cstr, end_cstr) strtoll(cur_cstr, end_cstr, 10);
+#endif
 
 namespace onnx_executor {
 
 std::vector<char> ReadFile(const std::string &filename);
+
+template <class Int>
+bool ConvertStringToInteger(const std::string &str, Int *out) {
+  // copied from kaldi/src/util/text-util.h
+  static_assert(std::is_integral<Int>::value, "");
+  const char *this_str = str.c_str();
+  char *end = nullptr;
+  errno = 0;
+  int64_t i = ONNX_STRTOLL(this_str, &end);
+  if (end != this_str) {
+    while (isspace(*end)) ++end;
+  }
+  if (end == this_str || *end != '\0' || errno != 0) return false;
+  Int iInt = static_cast<Int>(i);
+  if (static_cast<int64_t>(iInt) != i ||
+      (i < 0 && !std::numeric_limits<Int>::is_signed)) {
+    return false;
+  }
+  *out = iInt;
+  return true;
+}
 
 /// Split a string using any of the single character delimiters.
 /// If omit_empty_strings == true, the output will contain any
@@ -50,7 +83,7 @@ bool SplitStringToIntegers(const std::string &full, const char *delim,
     const char *this_str = split[i].c_str();
     char *end = NULL;
     int64_t j = 0;
-    j = SHERPA_ONNX_STRTOLL(this_str, &end);
+    j = ONNX_STRTOLL(this_str, &end);
     if (end == this_str || *end != '\0') {
       out->clear();
       return false;
@@ -72,6 +105,10 @@ template <class F>
 bool SplitStringToFloats(const std::string &full, const char *delim,
                          bool omit_empty_strings,  // typically false
                          std::vector<F> *out);
+
+// This is defined for F = float and double.
+template <typename T>
+bool ConvertStringToReal(const std::string &str, T *out);
 
 }  // namespace onnx_executor
 

@@ -7,7 +7,11 @@ function(download_onnxruntime)
 
   if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
     if(${CMAKE_SYSTEM_PROCESSOR} STREQUAL x86_64)
-      include(onnxruntime-linux-x86_64)
+      if(ENABLE_ONNX_EXECUTOR_GPU)
+        include(onnxruntime-linux-x86_64-gpu)
+      else()
+        include(onnxruntime-linux-x86_64)
+      endif()
     else()
       #TODO(lianghu): support other platform
       message(FATAL_ERROR "Only support x86_64 now")

@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "onnx-executor/macros.h"
+
 namespace onnx_executor {
 
 Provider StringToProvider(std::string s) {
@@ -11,18 +13,13 @@ Provider StringToProvider(std::string s) {
     return Provider::kCPU;
   } else if (s == "cuda") {
     return Provider::kCUDA;
-  } else if (s == "coreml") {
-    return Provider::kCoreML;
-  } else if (s == "xnnpack") {
-    return Provider::kXnnpack;
-  } else if (s == "nnapi") {
-    return Provider::kNNAPI;
   } else if (s == "trt") {
     return Provider::kTRT;
-  } else if (s == "directml") {
-    return Provider::kDirectML;
   } else {
-    // SHERPA_ONNX_LOGE("Unsupported string: %s. Fallback to cpu", s.c_str());
+    ONNX_EXECUTOR_LOGE(
+        "Currently, only cpu, cuda, and trt are supported.Unsupported string: "
+        "%s. Fallback to cpu",
+        s.c_str());
     return Provider::kCPU;
   }
 }

@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include "onnx-executor/provider-config.h"
 #include "onnxruntime_cxx_api.h"  // NOLINT
 
 namespace onnx_executor {
@@ -12,6 +13,8 @@ struct OnnxRuntimeConfig {
   std::string model;
   std::string provider = "cpu";
   int32_t num_threads = 1;
+
+  OnnxRuntimeProviderConfig provider_config;
 };
 
 class OnnxExecutor {

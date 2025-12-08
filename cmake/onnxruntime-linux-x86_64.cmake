@@ -4,7 +4,7 @@ set(onnxruntime_URL
 set(onnxruntime_HASH "SHA256=1fa4dcaef22f6f7d5cd81b28c2800414350c10116f5fdd46a2160082551c5f9b")
 
 set(onnxruntime_possible_file_locations
-  ${PROJECT_SOURCE_DIR}/third-part/onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}.tgz
+  ${CMAKE_SOURCE_DIR}/third-part/onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}.tgz
 )
 
 foreach(f IN LISTS onnxruntime_possible_file_locations)

@@ -1,12 +1,15 @@
 #include "onnx-executor/onnx-utils.h"
 
+#include <sstream>
+
 #include "onnx-executor/macros.h"
 #include "onnx-executor/provider.h"
 
 namespace onnx_executor {
 
-Ort::SessionOptions GetSessionOptions(int32_t num_threads,
-                                      const std::string &provider_str) {
+Ort::SessionOptions GetSessionOptions(
+    int32_t num_threads, const std::string &provider_str,
+    const OnnxRuntimeProviderConfig *provider_config /* = nullptr */) {
   Provider p = StringToProvider(provider_str);
 
   Ort::SessionOptions sess_opts;
@@ -15,6 +18,50 @@ Ort::SessionOptions GetSessionOptions(int32_t num_threads,
   sess_opts.SetInterOpNumThreads(num_threads);
 
   // TODO(lianghu): support other provider.
+  std::vector<std::string> available_providers = Ort::GetAvailableProviders();
+  std::ostringstream os;
+  for (const auto &ep : available_providers) {
+    os << ep << ", ";
+  }
+
+  switch (p) {
+    case Provider::kCPU:
+      // nothing to do
+      break;
+    case Provider::kCUDA: {
+      if (std::find(available_providers.begin(), available_providers.end(),
+                    "CUDAExecutionProvider") != available_providers.end()) {
+        // The CUDA provider is available, proceed with setting the options
+        OrtCUDAProviderOptions options;
+
+        if (provider_config != nullptr) {
+          options.device_id = provider_config->device_id;
+          options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearch(
+              provider_config->cuda_provider_config.ort_cudnn_conv_algo_search);
+        } else {
+          options.device_id = 0;
+          // Default OrtCudnnConvAlgoSearchExhaustive is extremely slow
+          options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchHeuristic;
+          // set more options on need
+        }
+        sess_opts.AppendExecutionProvider_CUDA(options);
+      } else {
+        ONNX_EXECUTOR_LOGE(
+            "Please compile with -DSHERPA_ONNX_ENABLE_GPU=ON. Available "
+            "providers: %s. Fallback to cpu!",
+            os.str().c_str());
+      }
+      break;
+    }
+    case Provider::kTRT: {
+      // TODO(lianghu)
+      ONNX_EXECUTOR_LOGE("TensorRt currently unsupported.");
+      exit(-1);
+      break;
+    }
+    default:
+      break;
+  }
 
   return sess_opts;
 }

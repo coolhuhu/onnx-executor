@@ -13,7 +13,8 @@ class OnnxExecutor::Impl {
   Impl(const OnnxRuntimeConfig &config)
       : config_(config),
         env_(ORT_LOGGING_LEVEL_ERROR),
-        sess_opts_(GetSessionOptions(config.num_threads, config.provider)),
+        sess_opts_(GetSessionOptions(config.num_threads, config.provider,
+                                     &config.provider_config)),
         allocator_{} {
     Init();
   }

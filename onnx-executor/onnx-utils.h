@@ -3,12 +3,14 @@
 
 #include <unordered_map>
 
+#include "onnx-executor/provider-config.h"
 #include "onnxruntime_cxx_api.h"  // NOLINT
 
 namespace onnx_executor {
 
-Ort::SessionOptions GetSessionOptions(int32_t num_threads,
-                                      const std::string &provider_str);
+Ort::SessionOptions GetSessionOptions(
+    int32_t num_threads, const std::string &provider_str,
+    const OnnxRuntimeProviderConfig *provider_config = nullptr);
 
 /**
  * Get the input names of a model.
