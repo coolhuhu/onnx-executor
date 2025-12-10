@@ -44,6 +44,8 @@ class OnnxExecutor::Impl {
     GetInputNames(sess_.get(), &input_names_, &input_names_ptr_);
     GetOutputNames(sess_.get(), &output_names_, &output_names_ptr_);
 
+    PrintModelInputInfo(sess_.get(), allocator_);
+
     Ort::ModelMetadata meta_data = sess_->GetModelMetadata();
     GetModelMetaData(meta_data, &meta_data_);
     PrintMetaData();

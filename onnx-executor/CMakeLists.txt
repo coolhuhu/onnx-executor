@@ -8,9 +8,4 @@ set(onnx_executor_srcs
 
 add_library(onnx-executor SHARED ${onnx_executor_srcs})
 target_link_libraries(onnx-executor PUBLIC onnxruntime)
-if(ENABLE_ONNX_EXECUTOR_GPU)
-  target_link_libraries(onnx-executor PUBLIC 
-    onnxruntime_providers_cuda
-  )
-endif()
 target_include_directories(onnx-executor PRIVATE ${CMAKE_SOURCE_DIR})

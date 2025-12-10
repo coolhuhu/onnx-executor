@@ -28,6 +28,103 @@ Ort::SessionOptions GetSessionOptions(
     case Provider::kCPU:
       // nothing to do
       break;
+    case Provider::kTRT: {
+      if (provider_config == nullptr) {
+        ONNX_EXECUTOR_LOGE("trt provider shouble be set provider config");
+        exit(-1);
+      } else {
+        auto trt_config = provider_config->tensorrt_provider_config;
+        auto device_id = std::to_string(provider_config->device_id);
+        auto trt_max_workspace_size =
+            std::to_string(trt_config.trt_max_workspace_size);
+        auto trt_max_partition_iterations =
+            std::to_string(trt_config.trt_max_partition_iterations);
+        auto trt_min_subgraph_size =
+            std::to_string(trt_config.trt_min_subgraph_size);
+        auto trt_fp16_enable = std::to_string(trt_config.trt_fp16_enable);
+        auto trt_detailed_build_log =
+            std::to_string(trt_config.trt_detailed_build_log);
+        auto trt_engine_cache_enable =
+            std::to_string(trt_config.trt_engine_cache_enable);
+        auto trt_timing_cache_enable =
+            std::to_string(trt_config.trt_timing_cache_enable);
+        auto trt_dump_subgraphs = std::to_string(trt_config.trt_dump_subgraphs);
+
+        std::vector<std::pair<const char *, const char *>> trt_options = {
+            {"device_id", device_id.c_str()},
+            {"trt_max_workspace_size", trt_max_workspace_size.c_str()},
+            {"trt_max_partition_iterations",
+             trt_max_partition_iterations.c_str()},
+            {"trt_min_subgraph_size", trt_min_subgraph_size.c_str()},
+            {"trt_fp16_enable", trt_fp16_enable.c_str()},
+            {"trt_detailed_build_log", trt_detailed_build_log.c_str()},
+            {"trt_engine_cache_enable", trt_engine_cache_enable.c_str()},
+            {"trt_engine_cache_path", trt_config.trt_engine_cache_path.c_str()},
+            {"trt_timing_cache_enable", trt_timing_cache_enable.c_str()},
+            {"trt_timing_cache_path", trt_config.trt_timing_cache_path.c_str()},
+            {"trt_dump_subgraphs", trt_dump_subgraphs.c_str()}};
+
+        if (!trt_config.trt_profile_min_shapes.empty()) {
+          trt_options.emplace_back("trt_profile_min_shapes",
+                                   trt_config.trt_profile_min_shapes.c_str());
+        }
+        if (!trt_config.trt_profile_max_shapes.empty()) {
+          trt_options.emplace_back("trt_profile_max_shapes",
+                                   trt_config.trt_profile_max_shapes.c_str());
+        }
+        if (!trt_config.trt_profile_opt_shapes.empty()) {
+          trt_options.emplace_back("trt_profile_opt_shapes",
+                                   trt_config.trt_profile_opt_shapes.c_str());
+        }
+
+        // TODO: add other trt option
+
+        std::vector<const char *> option_keys, option_values;
+        for (const auto &pair : trt_options) {
+          option_keys.emplace_back(pair.first);
+          option_values.emplace_back(pair.second);
+        }
+
+        std::vector<std::string> available_providers =
+            Ort::GetAvailableProviders();
+        if (std::find(available_providers.begin(), available_providers.end(),
+                      "TensorrtExecutionProvider") !=
+            available_providers.end()) {
+          const auto &api = Ort::GetApi();
+
+          OrtTensorRTProviderOptionsV2 *tensorrt_options = nullptr;
+          OrtStatus *statusC =
+              api.CreateTensorRTProviderOptions(&tensorrt_options);
+          OrtStatus *statusU = api.UpdateTensorRTProviderOptions(
+              tensorrt_options, option_keys.data(), option_values.data(),
+              option_keys.size());
+          sess_opts.AppendExecutionProvider_TensorRT_V2(*tensorrt_options);
+
+          if (statusC) {
+            const auto &api = Ort::GetApi();
+            const char *msg = api.GetErrorMessage(statusC);
+            ONNX_EXECUTOR_LOGE(
+                "Failed to enable TensorRT : %s."
+                "Available providers: %s. Fallback to cuda",
+                msg, os.str().c_str());
+            api.ReleaseStatus(statusC);
+          }
+          if (statusU) {
+            const auto &api = Ort::GetApi();
+            const char *msg = api.GetErrorMessage(statusU);
+            ONNX_EXECUTOR_LOGE(
+                "Failed to enable TensorRT : %s."
+                "Available providers: %s. Fallback to cuda",
+                msg, os.str().c_str());
+            api.ReleaseStatus(statusU);
+          }
+
+          api.ReleaseTensorRTProviderOptions(tensorrt_options);
+        }
+      }
+      // break; is omitted here intentionally so that
+      // if TRT not available, CUDA will be used
+    }
     case Provider::kCUDA: {
       if (std::find(available_providers.begin(), available_providers.end(),
                     "CUDAExecutionProvider") != available_providers.end()) {
@@ -51,12 +148,6 @@ Ort::SessionOptions GetSessionOptions(
             "providers: %s. Fallback to cpu!",
             os.str().c_str());
       }
-      break;
-    }
-    case Provider::kTRT: {
-      // TODO(lianghu)
-      ONNX_EXECUTOR_LOGE("TensorRt currently unsupported.");
-      exit(-1);
       break;
     }
     default:
@@ -117,6 +208,29 @@ void GetOutputNames(Ort::Session *sess, std::vector<std::string> *output_names,
   for (size_t i = 0; i != node_count; ++i) {
     (*output_names)[i] = GetOutputName(sess, i, allocator);
     (*output_names_ptr)[i] = (*output_names)[i].c_str();
+  }
+}
+
+void PrintModelInputInfo(Ort::Session *sess,
+                         Ort::AllocatorWithDefaultOptions &allocator) {
+  size_t num_input_nodes = sess->GetInputCount();
+  ONNX_EXECUTOR_LOGE("number of inputs: %lu", num_input_nodes);
+
+  for (size_t i = 0; i < num_input_nodes; ++i) {
+    auto input_name = sess->GetInputNameAllocated(i, allocator);
+    ONNX_EXECUTOR_LOGE("input_%lu's name is %s", i, input_name.get());
+
+    Ort::TypeInfo type_info = sess->GetInputTypeInfo(i);
+    auto tensor_info = type_info.GetTensorTypeAndShapeInfo();
+    std::vector<int64_t> input_shape = tensor_info.GetShape();
+
+    std::string shape_str;
+    for (auto s : input_shape) {
+      shape_str.append(std::to_string(s));
+      shape_str.push_back(' ');
+    }
+
+    ONNX_EXECUTOR_LOGE("input_%lu's shape is: %s", i, shape_str.c_str());
   }
 }
 

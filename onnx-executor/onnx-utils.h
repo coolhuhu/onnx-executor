@@ -43,6 +43,9 @@ Ort::Value CreateTensor(T *data, size_t data_len, int64_t *shape,
                                   shape_len);
 }
 
+void PrintModelInputInfo(Ort::Session *sess,
+                         Ort::AllocatorWithDefaultOptions &allocator);
+
 void PrintModelMetaData(Ort::ModelMetadata &meta_data);
 
 void GetModelMetaData(

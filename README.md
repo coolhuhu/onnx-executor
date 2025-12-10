@@ -5,17 +5,14 @@ A lightweight C++ library for running ONNX models using ONNX Runtime. This libra
 ## Features
 
 - Simple C++ API for ONNX model inference
-- Support for multiple execution providers (CPU, and more)
 - Custom metadata extraction from ONNX models
 - Thread-safe execution
-- CMake-based build system
-- Cross-platform support (Linux, macOS, Windows)
 
 ## Build Requirements
 
 - CMake 3.14 or higher
 - C++17 compatible compiler
-- ONNX Runtime (automatically downloaded by CMake)
+- ONNX Runtime (automatically downloaded by CMake or load files downloaded in advance to the third-part directory.)
 
 ## Building
 
@@ -29,6 +26,8 @@ mkdir build && cd build
 
 # Configure and build
 cmake ..
+# or use GPU
+# cmake -DENABLE_ONNX_EXECUTOR_GPU=ON ..
 make -j$(nproc)
 ```
 
@@ -63,7 +62,7 @@ int main(int argc, char **argv) {
 
     // Run inference
     std::vector<Ort::Value> inputs;
-    inputs.push_back(std::move(input_tensor));
+    inputs.emplace_back(std::move(input_tensor));
 
     std::vector<Ort::Value> outputs = executor.Forward(std::move(inputs));
 
@@ -75,10 +74,6 @@ int main(int argc, char **argv) {
 }
 ```
 
-### Complete Example
-
-See `example/silero-vad.cc` for a complete example showing how to use the library with the Silero VAD (Voice Activity Detection) model.
-
 ## API Reference
 
 ### OnnxRuntimeConfig
@@ -86,8 +81,9 @@ See `example/silero-vad.cc` for a complete example showing how to use the librar
 Configuration structure for the ONNX Runtime executor:
 
 - `model` (std::string): Path to the ONNX model file
-- `provider` (std::string): Execution provider (default: "cpu")
+- `provider` (std::string): Execution provider (default: "cpu", currently supported: "cpu", "cuda")
 - `num_threads` (int32_t): Number of threads to use (default: 1)
+- `provider_config` : Onnxruntime execution provider configuration
 
 ### OnnxExecutor
 
@@ -134,7 +130,9 @@ onnx-executor/
 │   ├── provider.h/.cc       # Execution provider management
 │   └── utils.h/.cc          # Internal utilities
 ├── example/                 # Example usage
-│   └── silero-vad.cc       # Silero VAD example
+│   └── silero-vad.cc        # Silero VAD example
+│   ├── silero_vad.onnx      # Silero VAD onnx model
+│   ├── multi_thread_load.cc # Multithreading inference example
 ├── cmake/                   # CMake modules
 ├── third-part/             # Third-party dependencies
 └── CMakeLists.txt          # Root CMake configuration
