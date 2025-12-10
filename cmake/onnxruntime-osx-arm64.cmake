@@ -1,10 +1,10 @@
 set(onnxruntime_URL 
-  "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}.tgz"
+  "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-osx-arm64-${ONNXRUNTIME_VERSION}.tgz"
 )
-set(onnxruntime_HASH "SHA256=1fa4dcaef22f6f7d5cd81b28c2800414350c10116f5fdd46a2160082551c5f9b")
+set(onnxruntime_HASH "SHA256=b4d513ab2b26f088c66891dbbc1408166708773d7cc4163de7bdca0e9bbb7856")
 
 set(onnxruntime_possible_file_locations
-  ${CMAKE_SOURCE_DIR}/third-part/onnxruntime-linux-x64-${ONNXRUNTIME_VERSION}.tgz
+  ${CMAKE_SOURCE_DIR}/third-part/onnxruntime-osx-arm64-${ONNXRUNTIME_VERSION}.tgz
 )
 
 foreach(f IN LISTS onnxruntime_possible_file_locations)
@@ -44,7 +44,7 @@ set_target_properties(onnxruntime PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${onnxruntime_SOURCE_DIR}/include"
 )
 
-file(GLOB onnxruntime_lib_files "${onnxruntime_SOURCE_DIR}/lib/libonnxruntime*")
+file(GLOB onnxruntime_lib_files "${onnxruntime_SOURCE_DIR}/lib/libonnxruntime*dylib")
 file(COPY ${onnxruntime_lib_files} DESTINATION ${CMAKE_BINARY_DIR}/lib)
 message(STATUS "onnxruntime lib files: ${onnxruntime_lib_files}")
 install(FILES ${onnxruntime_lib_files} DESTINATION lib)

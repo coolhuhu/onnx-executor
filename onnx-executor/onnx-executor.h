@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 
+#include "onnx-executor/provider-config.h"
 #include "onnxruntime_cxx_api.h"  // NOLINT
 
 namespace onnx_executor {
@@ -12,17 +13,21 @@ struct OnnxRuntimeConfig {
   std::string model;
   std::string provider = "cpu";
   int32_t num_threads = 1;
+
+  OnnxRuntimeProviderConfig provider_config;
 };
 
 class OnnxExecutor {
  public:
   explicit OnnxExecutor(const OnnxRuntimeConfig &config);
 
-  ~OnnxExecutor() = default;
+  ~OnnxExecutor();
 
   std::vector<Ort::Value> Forward(const std::vector<Ort::Value> &inputs);
 
   std::vector<Ort::Value> Forward(std::vector<Ort::Value> &&inputs);
+
+  std::string LookupCustomMetaData(const char *key);
 
  private:
   class Impl;
